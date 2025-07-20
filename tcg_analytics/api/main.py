@@ -7,6 +7,8 @@ import sys
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from tcg_analytics.util.justtcg import JustTCGClient
 
@@ -18,6 +20,16 @@ app = FastAPI(
     description="API for trading card game analytics and data retrieval",
     version="1.0.0",
 )
+
+# Mount static files
+static_path = os.path.join(os.path.dirname(__file__), "..", "..", "static")
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+
+@app.get("/")
+async def root():
+    """Serve the main UI page."""
+    return FileResponse(os.path.join(static_path, "index.html"))
 
 
 @app.get("/api/v1/health_check", response_model=dict[str, str])

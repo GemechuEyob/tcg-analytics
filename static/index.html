@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCG Analytics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .search-section {
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #666;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .card-result {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .card-result h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .card-detail {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .card-detail:last-child {
+            border-bottom: none;
+        }
+        .card-details {
+            margin-top: 15px;
+        }
+        .card-detail strong {
+            color: #555;
+            margin-right: 10px;
+        }
+        .card-detail a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .card-detail a:hover {
+            text-decoration: underline;
+        }
+        .json-output {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .health-status {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-healthy {
+            background-color: #28a745;
+        }
+        .status-unhealthy {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TCG Analytics</h1>
+
+        <div class="health-status">
+            <div id="health-status">
+                <span class="status-indicator" id="status-indicator"></span>
+                <span id="status-text">Checking API status...</span>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <h2>Card Search</h2>
+            <div class="form-group">
+                <label for="cardId">TCGPlayer Card ID:</label>
+                <input type="text" id="cardId" placeholder="Enter TCGPlayer card ID (e.g., 12345)">
+            </div>
+            <button onclick="searchCard()" id="searchBtn">Search Card</button>
+            <div class="loading" id="loading">Searching...</div>
+        </div>
+
+        <div id="result-container"></div>
+    </div>
+
+    <script>
+        // Check API health on page load
+        window.addEventListener('load', checkHealth);
+
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/v1/health_check');
+                const data = await response.json();
+
+                if (response.ok && data.status === 'healthy') {
+                    document.getElementById('status-indicator').className = 'status-indicator status-healthy';
+                    document.getElementById('status-text').textContent = 'API is healthy';
+                } else {
+                    throw new Error('API is not healthy');
+                }
+            } catch (error) {
+                document.getElementById('status-indicator').className = 'status-indicator status-unhealthy';
+                document.getElementById('status-text').textContent = 'API is not responding';
+            }
+        }
+
+        async function searchCard() {
+            const cardId = document.getElementById('cardId').value.trim();
+            const resultContainer = document.getElementById('result-container');
+            const loadingElement = document.getElementById('loading');
+            const searchBtn = document.getElementById('searchBtn');
+
+            if (!cardId) {
+                showError('Please enter a card ID');
+                return;
+            }
+
+            // Clear previous results
+            resultContainer.innerHTML = '';
+
+            // Show loading state
+            loadingElement.style.display = 'block';
+            searchBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/v1/cards/${encodeURIComponent(cardId)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayCardResult(data);
+                } else {
+                    showError(data.detail || 'Failed to fetch card information');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                loadingElement.style.display = 'none';
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displayCardResult(cardData) {
+            const resultContainer = document.getElementById('result-container');
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'card-result';
+
+            // Extract card information from the API response
+            const cardInfo = cardData.data && cardData.data.length > 0 ? cardData.data[0] : null;
+
+            if (!cardInfo) {
+                resultDiv.innerHTML = `
+                    <h3>Card Information</h3>
+                    <div class="error">No card data found in response</div>
+                `;
+                resultContainer.appendChild(resultDiv);
+                return;
+            }
+
+            const name = cardInfo.name || 'Unknown';
+            const game = cardInfo.game || '';
+            const set = cardInfo.set || '';
+            const number = cardInfo.number || '';
+            const rarity = cardInfo.rarity || '';
+            const tcgplayerId = cardInfo.tcgplayerId || '';
+            const cardId = cardInfo.id || '';
+
+            // Get variant information for pricing
+            const variants = cardInfo.variants || [];
+            const nearMintVariant = variants.find(v => v.condition === 'Near Mint' && v.printing === 'Normal');
+            const currentPrice = nearMintVariant ? nearMintVariant.price : 'N/A';
+            const priceChange24hr = nearMintVariant ? nearMintVariant.priceChange24hr : 'N/A';
+            const priceChange7d = nearMintVariant ? nearMintVariant.priceChange7d : 'N/A';
+
+            resultDiv.innerHTML = `
+                <h3>Card Information</h3>
+                <div class="card-details">
+                    <div class="card-detail"><strong>Name:</strong> ${escapeHtml(name)}</div>
+                    <div class="card-detail"><strong>Game:</strong> ${escapeHtml(game)}</div>
+                    <div class="card-detail"><strong>Set:</strong> ${escapeHtml(set)}</div>
+                    <div class="card-detail"><strong>Number:</strong> ${escapeHtml(number)}</div>
+                    <div class="card-detail"><strong>Rarity:</strong> ${escapeHtml(rarity)}</div>
+                    <div class="card-detail"><strong>TCGPlayer ID:</strong> ${escapeHtml(tcgplayerId)}</div>
+                    <div class="card-detail"><strong>Card ID:</strong> ${escapeHtml(cardId)}</div>
+                    <div class="card-detail"><strong>Current Price (Near Mint):</strong> ${currentPrice !== 'N/A' ? '$' + currentPrice : 'N/A'}</div>
+                    ${priceChange24hr !== 'N/A' ? `<div class="card-detail"><strong>24hr Price Change:</strong> <span style="color: ${priceChange24hr >= 0 ? 'green' : 'red'}">${priceChange24hr > 0 ? '+' : ''}${priceChange24hr}%</span></div>` : ''}
+                    ${priceChange7d !== 'N/A' ? `<div class="card-detail"><strong>7-day Price Change:</strong> <span style="color: ${priceChange7d >= 0 ? 'green' : 'red'}">${priceChange7d > 0 ? '+' : ''}${priceChange7d}%</span></div>` : ''}
+
+                    ${variants.length > 0 ? `
+                        <div class="card-detail" style="margin-top: 20px;">
+                            <strong>Available Variants:</strong>
+                            <div style="margin-top: 10px;">
+                                ${variants.map(variant => `
+                                    <div style="padding: 8px; margin: 5px 0; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff;">
+                                        <strong>${variant.condition}${variant.printing === 'Foil' ? ' (Foil)' : ''}</strong>: $${variant.price}
+                                        ${variant.priceChange24hr !== 0 ? `<span style="color: ${variant.priceChange24hr >= 0 ? 'green' : 'red'}; margin-left: 10px;">(${variant.priceChange24hr > 0 ? '+' : ''}${variant.priceChange24hr}% 24h)</span>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            resultContainer.appendChild(resultDiv);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const resultContainer = document.getElementById('result-container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(errorDiv);
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('cardId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCard();
+            }
+        });
+    </script>
+</body>
+</html>
