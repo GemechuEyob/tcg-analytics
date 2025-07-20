@@ -8,9 +8,10 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
 
+from tcg_analytics.util.justtcg import JustTCGClient
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from tcg_analytics.util.justtcg import JustTCGClient
 
 app = FastAPI(
     title="TCG Analytics API",

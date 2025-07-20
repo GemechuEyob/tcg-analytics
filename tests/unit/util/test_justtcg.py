@@ -9,8 +9,9 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 from tcg_analytics.util.justtcg import JustTCGClient
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 class TestJustTCGClient:
