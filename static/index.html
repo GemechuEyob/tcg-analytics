@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCG Card Lookup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .search-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #tcgplayerId {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        #searchBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #searchBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #searchBtn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            padding: 0 40px 40px;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .card-result {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+
+        .card-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .detail-group {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .detail-group.ebay {
+            border-left: 4px solid #0064d2;
+        }
+
+        .ebay-listings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .ebay-listing {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s ease;
+        }
+
+        .ebay-listing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .ebay-listing-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        .ebay-listing-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0064d2;
+            margin-bottom: 5px;
+        }
+
+        .ebay-listing-details {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .ebay-listing-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #0064d2;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .ebay-listing-link:hover {
+            text-decoration: underline;
+        }
+
+        .price-range {
+            background: linear-gradient(135deg, #0064d2 0%, #4a90e2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .price-range h4 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .price-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .price-stat {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        .price-stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .price-stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .data-source-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #6c757d;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #2c3e50;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .detail-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .detail-value {
+            color: #2c3e50;
+            text-align: right;
+        }
+
+        .json-view {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .toggle-json {
+            background: #34495e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-section {
+                padding: 20px;
+            }
+
+            .results-section {
+                padding: 0 20px 20px;
+            }
+
+            .card-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TCG Card Lookup</h1>
+            <p>Enter a TCGPlayer ID to get detailed card information from JustTCG and eBay</p>
+        </div>
+
+        <div class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="tcgplayerId"
+                        placeholder="Enter TCGPlayer ID (e.g., 12345)"
+                        required
+                    >
+                    <button type="submit" id="searchBtn">Search</button>
+                </div>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Fetching card information from JustTCG and eBay...</p>
+            </div>
+        </div>
+
+        <div class="results-section" id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const tcgplayerId = document.getElementById('tcgplayerId').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            if (!tcgplayerId) {
+                showError('Please enter a TCGPlayer ID');
+                return;
+            }
+
+            // Show loading state
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            loading.style.display = 'block';
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/cards/${tcgplayerId}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to fetch card data');
+                }
+
+                const cardData = await response.json();
+                displayCardData(cardData);
+
+            } catch (error) {
+                console.error('Error fetching card data:', error);
+                showError(error.message || 'Failed to fetch card information');
+            } finally {
+                // Reset loading state
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+                loading.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            const results = document.getElementById('results');
+            results.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function displayCardData(data) {
+            const results = document.getElementById('results');
+
+            // Handle case where no data is returned
+            if (!data || Object.keys(data).length === 0) {
+                showError('No card data found for this TCGPlayer ID');
+                return;
+            }
+
+            // Extract card information - adapt based on actual API response structure
+            const cardInfo = extractCardInfo(data);
+            const ebayData = data.ebay_data || null;
+
+            results.innerHTML = `
+                <div class="card-result">
+                    <div class="card-header">
+                        <h2 class="card-title">${cardInfo.name || 'Unknown Card'}</h2>
+                        <p class="card-subtitle">${cardInfo.set || ''} ${cardInfo.rarity ? '• ' + cardInfo.rarity : ''}</p>
+                    </div>
+
+                    ${generateDataSourceTabs(cardInfo, ebayData)}
+
+                    <button class="toggle-json" onclick="toggleJsonView()">Show Raw JSON</button>
+                    <div class="json-view" id="jsonView" style="display: none;">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function extractCardInfo(data) {
+            // This function adapts to the actual JustTCG API response structure
+            // Adjust field names based on the actual API response
+            return {
+                name: data.name || data.cardName || data.title,
+                set: data.set || data.setName || data.expansion,
+                rarity: data.rarity,
+                type: data.type || data.cardType,
+                manaCost: data.manaCost || data.cost,
+                power: data.power,
+                toughness: data.toughness,
+                text: data.text || data.description || data.cardText,
+                artist: data.artist,
+                tcgplayerId: data.tcgplayerId || data.tcgPlayerProductId,
+                price: data.price || data.marketPrice,
+                lowPrice: data.lowPrice,
+                highPrice: data.highPrice,
+                imageUrl: data.imageUrl || data.image
+            };
+        }
+
+        function generateDataSourceTabs(cardInfo, ebayData) {
+            const hasEbayData = ebayData && ebayData.ebay_listings && ebayData.ebay_listings.length > 0;
+
+            return `
+                <div class="data-source-tabs">
+                    <button class="tab-button active" onclick="switchTab('justtcg')">JustTCG Data</button>
+                    <button class="tab-button ${!hasEbayData ? 'disabled' : ''}" onclick="switchTab('ebay')" ${!hasEbayData ? 'disabled' : ''}>
+                        eBay Data ${hasEbayData ? `(${ebayData.ebay_total_results} results)` : '(No data)'}
+                    </button>
+                </div>
+
+                <div id="justtcg-content" class="tab-content active">
+                    <div class="card-details">
+                        ${generateDetailGroups(cardInfo)}
+                    </div>
+                </div>
+
+                <div id="ebay-content" class="tab-content">
+                    ${hasEbayData ? generateEbayContent(ebayData) : '<p>No eBay data available for this card.</p>'}
+                </div>
+            `;
+        }
+
+        function generateDetailGroups(cardInfo) {
+            const groups = [];
+
+            // Basic Information
+            const basicInfo = [];
+            if (cardInfo.type) basicInfo.push(['Type', cardInfo.type]);
+            if (cardInfo.manaCost) basicInfo.push(['Mana Cost', cardInfo.manaCost]);
+            if (cardInfo.power !== undefined && cardInfo.toughness !== undefined) {
+                basicInfo.push(['Power/Toughness', `${cardInfo.power}/${cardInfo.toughness}`]);
+            }
+            if (cardInfo.tcgplayerId) basicInfo.push(['TCGPlayer ID', cardInfo.tcgplayerId]);
+
+            if (basicInfo.length > 0) {
+                groups.push(createDetailGroup('Basic Information', basicInfo));
+            }
+
+            // Pricing Information
+            const priceInfo = [];
+            if (cardInfo.price) priceInfo.push(['Market Price', `$${cardInfo.price}`]);
+            if (cardInfo.lowPrice) priceInfo.push(['Low Price', `$${cardInfo.lowPrice}`]);
+            if (cardInfo.highPrice) priceInfo.push(['High Price', `$${cardInfo.highPrice}`]);
+
+            if (priceInfo.length > 0) {
+                groups.push(createDetailGroup('Pricing', priceInfo));
+            }
+
+            // Additional Details
+            const additionalInfo = [];
+            if (cardInfo.artist) additionalInfo.push(['Artist', cardInfo.artist]);
+            if (cardInfo.text) additionalInfo.push(['Card Text', cardInfo.text]);
+
+            if (additionalInfo.length > 0) {
+                groups.push(createDetailGroup('Additional Details', additionalInfo));
+            }
+
+            return groups.join('');
+        }
+
+        function generateEbayContent(ebayData) {
+            let content = '';
+
+            // Price range summary
+            if (ebayData.ebay_price_range && Object.keys(ebayData.ebay_price_range).length > 0) {
+                const priceRange = ebayData.ebay_price_range;
+                content += `
+                    <div class="price-range">
+                        <h4>eBay Price Analysis</h4>
+                        <div class="price-stats">
+                            <div class="price-stat">
+                                <div class="price-stat-label">Lowest</div>
+                                <div class="price-stat-value">$${priceRange.min ? priceRange.min.toFixed(2) : 'N/A'}</div>
+                            </div>
+                            <div class="price-stat">
+                                <div class="price-stat-label">Average</div>
+                                <div class="price-stat-value">$${priceRange.average ? priceRange.average.toFixed(2) : 'N/A'}</div>
+                            </div>
+                            <div class="price-stat">
+                                <div class="price-stat-label">Highest</div>
+                                <div class="price-stat-value">$${priceRange.max ? priceRange.max.toFixed(2) : 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Recent listings
+            if (ebayData.ebay_listings && ebayData.ebay_listings.length > 0) {
+                content += `
+                    <div class="detail-group ebay">
+                        <h3>Recent eBay Listings (${ebayData.ebay_listings.length} shown)</h3>
+                        <div class="ebay-listings">
+                            ${ebayData.ebay_listings.map(listing => `
+                                <div class="ebay-listing">
+                                    <div class="ebay-listing-title">${listing.title || 'No title'}</div>
+                                    <div class="ebay-listing-price">
+                                        ${listing.price ? `$${listing.price}` : 'Price not available'}
+                                        ${listing.currency && listing.currency !== 'USD' ? ` ${listing.currency}` : ''}
+                                    </div>
+                                    <div class="ebay-listing-details">
+                                        ${listing.condition ? `Condition: ${listing.condition}` : ''}
+                                        ${listing.seller ? `<br>Seller: ${listing.seller}` : ''}
+                                    </div>
+                                    ${listing.item_web_url ? `<a href="${listing.item_web_url}" target="_blank" class="ebay-listing-link">View on eBay</a>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return content || '<p>No eBay listing data available.</p>';
+        }
+
+        function createDetailGroup(title, items) {
+            const itemsHtml = items.map(([label, value]) => `
+                <div class="detail-item">
+                    <span class="detail-label">${label}:</span>
+                    <span class="detail-value">${value}</span>
+                </div>
+            `).join('');
+
+            return `
+                <div class="detail-group">
+                    <h3>${title}</h3>
+                    ${itemsHtml}
+                </div>
+            `;
+        }
+
+        function switchTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-content`).classList.add('active');
+        }
+
+        function toggleJsonView() {
+            const jsonView = document.getElementById('jsonView');
+            const button = event.target;
+
+            if (jsonView.style.display === 'none') {
+                jsonView.style.display = 'block';
+                button.textContent = 'Hide Raw JSON';
+            } else {
+                jsonView.style.display = 'none';
+                button.textContent = 'Show Raw JSON';
+            }
+        }
+    </script>
+</body>
+</html>
