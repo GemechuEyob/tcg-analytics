@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
 
-from util.justtcg import JustTCGClient
+from tcg_analytics.util.justtcg import JustTCGClient
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -45,12 +45,12 @@ async def get_card(card_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Configuration error: {str(e)}",
-        ) from None
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve card information: {str(e)}",
-        ) from None
+        ) from e
 
 
 if __name__ == "__main__":
