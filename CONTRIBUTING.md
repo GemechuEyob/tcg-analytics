@@ -22,16 +22,19 @@ Thank you for your interest in contributing to TCG Analytics! This document prov
 ### 2. Set Up Development Environment
 
 1. **Install Poetry** (if not already installed):
+
    ```bash
    curl -sSL https://install.python-poetry.org | python3 -
    ```
 
 2. **Install dependencies:**
+
    ```bash
    poetry install
    ```
 
 3. **Activate the virtual environment:**
+
    ```bash
    poetry shell
    ```
@@ -44,6 +47,7 @@ Thank you for your interest in contributing to TCG Analytics! This document prov
 ### 3. Running the Application
 
 **Start the development server:**
+
 ```bash
 poetry run python src/api/main.py
 ```
@@ -51,6 +55,7 @@ poetry run python src/api/main.py
 The API will be available at `http://localhost:8000`
 
 **Alternative using uvicorn:**
+
 ```bash
 poetry run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -58,24 +63,28 @@ poetry run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 ## Development Guidelines
 
 ### Code Style
+
 - Follow PEP 8 style guidelines
 - Use meaningful variable and function names
 - Add docstrings for all functions and classes
 - Keep functions small and focused
 
 ### Testing
+
 - Add tests for new functionality
 - Run existing tests to ensure nothing breaks:
   ```bash
-  poetry run python util/justtcg_test.py
+   poetry run python -m pytest --cov=tcg_analytics --cov-report=xml --cov-report=term
   ```
 
 ### Error Handling
+
 - Add appropriate error handling for new endpoints
 - Use FastAPI's HTTPException for API errors
 - Include meaningful error messages
 
 ### API Development
+
 - Follow RESTful conventions
 - Document new endpoints
 - Use appropriate HTTP status codes
@@ -91,11 +100,13 @@ poetry run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 Once the server is running, you can test the endpoints using curl:
 
 **Health Check:**
+
 ```bash
 curl http://localhost:8000/api/v1/health_check
 ```
 
 **Get Card Information:**
+
 ```bash
 curl http://localhost:8000/api/v1/cards/12345
 ```
@@ -105,17 +116,20 @@ Replace `12345` with an actual TCGPlayer card ID. Make sure you have set the `JU
 ## Submitting Changes
 
 1. **Create a new branch:**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. **Make your changes and commit:**
+
    ```bash
    git add .
    git commit -m "Add your descriptive commit message"
    ```
 
 3. **Push to your fork:**
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -128,6 +142,7 @@ Replace `12345` with an actual TCGPlayer card ID. Make sure you have set the `JU
 ## Reporting Issues
 
 When reporting issues, please include:
+
 - Steps to reproduce the problem
 - Expected vs actual behavior
 - Environment details (Python version, OS, etc.)
